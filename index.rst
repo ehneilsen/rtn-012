@@ -53,6 +53,49 @@
 .. Add content here.
 .. Do not include the document title (it's automatically added from metadata.yaml).
 
+..
+  4.1 Scope (Clause 1 of the ConOps document)
+      identification
+      doc overview
+      system overview
+  4.2 Referenced documents (Clause 2 of the ConOps document)
+  4.3 Current system or situation (Clause 3 of the ConOps document)
+      background, objectives, and scope
+      operational policies and constraints
+      description of the current system
+      modes of operation
+      user classes
+      support environment
+  4.4 Justification for and nature of changes (Clause 4 of the ConOps document)
+      justification of changes
+      description of changes
+      priorities among changes
+      changes considered but not included
+      assumptions and constraints
+  4.5 Concepts for the proposed system (Clause 5 of the ConOps document)
+      background, objectives, and scope
+      operational policies and constraints
+      description of the current system
+      modes of operation
+      user classes
+      support environment
+  4.6 Operational scenarios (Clause 6 of the ConOps document)
+  4.7 Summary of impacts (Clause 7 of the ConOps document)
+      operational impacts
+      organization impacts
+  4.8 Analysis of the proposed system (Clause 8 of the ConOps document)
+      summary of improvements
+      disadvantages and limitations
+      alternatives and trade-offs
+  4.9 Notes (Clause 9 on the ConOps document)
+  4.10 Appendices (Appendices of the ConOps document)
+  4.11 Glossary (Glossary of the ConOps document)
+   
+..
+  ESO Skycalc references: https://www.eso.org/sci/software/pipelines/skytools/skymodel
+  https://ui.adsabs.harvard.edu/abs/2012A%26A...543A..92N/abstract
+  https://ui.adsabs.harvard.edu/abs/2013A%26A...560A..91J/abstract
+
 .. .. rubric:: References
 
 .. Make in-text citations with: :cite:`bibkey`.
