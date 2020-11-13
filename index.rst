@@ -90,7 +90,37 @@
   4.9 Notes (Clause 9 on the ConOps document)
   4.10 Appendices (Appendices of the ConOps document)
   4.11 Glossary (Glossary of the ConOps document)
-   
+
+Overview
+========
+
+The Rubin Observatory scheduler uses the expected depth (limiting magnitude) of potential exposures as one of the fundamental features it uses to select among candidates.
+One of the primary factors in calculating this depth is the sky brightness: diffuse light not orginating in any object the survey is interested in including in its catalog. 
+The present (November, 2020) version of the scheduler estimates skybrightness values using the ESO skycalc_ sky brightness estimator. 
+Computing values using the skycalc_ software is sufficiently cumbersome that, rather than calculate sky brightness estimates at the time they are needed, the scheduler development team pre-calculates and caches all sky values that might be needed over the course of the survey.
+These pre-computed values are currently stored in Healpix_ maps with nside=32, sampled every 5 minutes.
+This format results in a set of files that are inconveniently large: 152GiB all told.
+Sky brightness typically varies smoothly, both over the sky and over time.
+Rather than store values for full healpix maps, significant storage space can be saved by saving the coefficients for a Zernike polynomial tha approximates the sky values to be cached.
+After giving a brief overview of the sky brightness estimate itself, this note describes an implementation of such an approximation, and examines its implications for disk space required, time taken to provide the scheduler sky values, and precision with whith the skycalc_ values are approximated. 
+
+Sky value estimation
+====================
+
+The "sky brightness" consists of diffuse light from (mostly) foreground sources, spread smoothly across the detector.
+The primary contributing sources include airglow, moon and starlight scattered off of particles in the Earth's atmospher, and Zodiacal light (sunlight scattered off of interplanetary dust in the disk of the solar system).
+ESO's skycalc_ software estimates the full spectral energy distribution of the sky brightness using physical models, including light singly and multiply scattered though Mie and Rayleigh scattering.
+
+To prepare the arrays of pre-computed sky brightness values, the scheduling team integrates skycalc-generated spectra over each of the Rubin Observatory bandpasses, for each (nside=32) healpixel, in each 5 minute interval in survey schedule.
+The resultant data-set is divided by date into a set of files totaling 152GiB. 
+When a sky brightness value (or set of values) is needed by the scheduler, it reads the file for the relevant date range from disk (if it is not already loaded) and looks up the value (or values).
+
+
+
+
+.. _skycalc: https://www.eso.org/sci/software/pipelines/skytools/skymodel
+.. _Healpix: https://healpix.jpl.nasa.gov/
+
 ..
   ESO Skycalc references: https://www.eso.org/sci/software/pipelines/skytools/skymodel
   https://ui.adsabs.harvard.edu/abs/2012A%26A...543A..92N/abstract
