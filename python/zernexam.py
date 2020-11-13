@@ -31,7 +31,7 @@ BAND_COLOR = {'u': '#56b4e9',
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel('DEBUG')
-logger.info("Starting")
+# logger.info("Starting")
 
 def compute_instant_residuals(zernike_sky, pre_sky, mjd, band):
     sky = pre_sky.sky.loc[(band, mjd)].copy()
@@ -60,14 +60,15 @@ def compute_band_residuals(zernike_sky, pre_sky, band):
     return sky
 
 
-def map_sky(fig, nrows, ncols, subplot_index, sky, column, title, **kwargs):
+def map_sky(fig, nrows, ncols, subplot_index, sky, column, title, radial_column='laea_r', colorbar=True, **kwargs):
     ax = fig.add_subplot(nrows, ncols, subplot_index, projection='polar')
-    p = ax.scatter(sky.az_rad, sky.laea_r, c=sky[column], **kwargs)
+    p = ax.scatter(sky.az_rad, sky[radial_column], c=sky[column], **kwargs)
     ax.set_title(title)
-    ax.set_ylim([0, np.max(sky.laea_r)])
+    ax.set_ylim([0, np.max(sky[radial_column])])
     ax.set_ylabel('')
     ax.set_yticks([])
-    fig.colorbar(p, ax=ax)
+    if colorbar:
+        fig.colorbar(p, orientation='horizontal', ax=ax)
     return ax
 
 
