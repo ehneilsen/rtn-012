@@ -31,7 +31,7 @@ BAND_COLOR = {'u': '#56b4e9',
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel('DEBUG')
-logger.info("Starting")
+# logger.info("Starting")
 
 def compute_instant_residuals(zernike_sky, pre_sky, mjd, band):
     sky = pre_sky.sky.loc[(band, mjd)].copy()
@@ -60,20 +60,22 @@ def compute_band_residuals(zernike_sky, pre_sky, band):
     return sky
 
 
-def map_sky(fig, nrows, ncols, subplot_index, sky, column, title, **kwargs):
+def map_sky(fig, nrows, ncols, subplot_index, sky, column, title, radial_column='laea_r', colorbar=True, **kwargs):
     ax = fig.add_subplot(nrows, ncols, subplot_index, projection='polar')
-    p = ax.scatter(sky.az_rad, sky.laea_r, c=sky[column], **kwargs)
-    ax.set_title(title)
-    ax.set_ylim([0, np.max(sky.laea_r)])
+    p = ax.scatter(sky.az_rad, sky[radial_column], c=sky[column], **kwargs)
+    ax.set_title(title, pad=20)
+    ax.set_ylim([0, np.max(sky[radial_column])])
     ax.set_ylabel('')
     ax.set_yticks([])
-    fig.colorbar(p, ax=ax)
+    if colorbar:
+        fig.colorbar(p, orientation='horizontal', ax=ax)
     return ax
 
 
-def resid_map(zernike_sky, pre_sky, mjd, band, fig=None):
-    sky = compute_instant_residuals(
-        zernike_sky, pre_sky, mjd, band)
+#def resid_map(zernike_sky, pre_sky, mjd, band, fig=None):
+#    sky = compute_instant_residuals(
+#        zernike_sky, pre_sky, mjd, band)
+def resid_map(sky, mjd, band, fig=None):
     sky['az_rad'] = np.radians(sky['az'])
     sky['zd'] = 90-sky['az']
     sky.query('sky>0 and zsky>0', inplace=True)
@@ -91,7 +93,7 @@ def resid_map(zernike_sky, pre_sky, mjd, band, fig=None):
                  cmap='viridis_r', vmin=vmin, vmax=vmax)
     axes['skycalc'] = ax
 
-    ax = map_sky(fig, 2, 2, 2, sky, 'sky', 'zsky',
+    ax = map_sky(fig, 2, 2, 2, sky, 'zsky', 'Zernike sky',
                  cmap='viridis_r', vmin=vmin, vmax=vmax)
     axes['zsky'] = ax
 
@@ -106,7 +108,7 @@ def resid_map(zernike_sky, pre_sky, mjd, band, fig=None):
     ax.set_title("skycalc-Zernike (masking moon)")
     axes['histogram'] = ax
 
-    fig.suptitle(f"MJD {mjd} in {band} band")
+    fig.suptitle(f"MJD {mjd:.3f} in {band} band", y=1)
     plt.tight_layout()
     return fig, axes
 
