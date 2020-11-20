@@ -54,6 +54,10 @@
 .. Do not include the document title (it's automatically added from metadata.yaml).
 
 ..
+  The IEEE provides a template for a "Concept of Operations document", which
+  covers a lot of the ground that should be covered by this note. So, I
+  repeat the outline here to serve as a list of things I need to at least
+  consider including.
   4.1 Scope (Clause 1 of the ConOps document)
       identification
       doc overview
@@ -87,9 +91,6 @@
       summary of improvements
       disadvantages and limitations
       alternatives and trade-offs
-  4.9 Notes (Clause 9 on the ConOps document)
-  4.10 Appendices (Appendices of the ConOps document)
-  4.11 Glossary (Glossary of the ConOps document)
 
 Overview
 ========
@@ -115,8 +116,22 @@ To prepare the arrays of pre-computed sky brightness values, the scheduling team
 The resultant data-set is divided by date into a set of files totaling 152GiB. 
 When a sky brightness value (or set of values) is needed by the scheduler, it reads the file for the relevant date range from disk (if it is not already loaded) and looks up the value (or values).
 
+:numref:`fig-healpix-map` shows extreme examples of such sky brightness maps.
+The left map shows a full dark sky (no moon or twilight). The dominant source of light in such a dark sky is airglow, which is dependent only on airmass.
+The map therefore shows near radial symmetry about the zenith. The other extreme is sky with a full moon at moderate airmass.
+Some radial dependence remains, but it is dominated by a gradient across the sky (in the sample in the figure, from left to right), and high brightnees about the moon itself.
 
+.. _label: fig-healpix-map
+.. figure:: /_static/healpix_map.png
+   :name: fig-healpix-map
 
+   Sky brightness maps of the sky brightness as stored in the cached healpix map files, generated using skycalc_.
+   The color scales are in units of :math:`\frac{\textrm{mag}}{\textrm{asec}^2}`.
+   The maps are in horizon coordinates: the center of each map is the zenith, and the radial coordinate the angle with zenith (with a maximum zenith distance of :math:`69^{\circ}`).
+
+In both cases, the sky brightness varies smoothly.
+The sharpent variation occurrs where the sky is brightest: near the moon, and just above the maximum airmass: locations on the sky the scheduler will avoid anyway.
+Furthermore, tests of the skycalc_ model reported in FIXME 2013A%26A...560A..91J show a standard deviation between the model and measured values of 0.2 :math:`\frac{\textrm{mag}}{\textrm{asec}^2}` or greater, indicating that there is little to be gained from storing model values to high precision. These considerations suggest that the full, high-resolution healpix map is unnecessary, and that a smooth approximation will be adequate.
 
 .. _skycalc: https://www.eso.org/sci/software/pipelines/skytools/skymodel
 .. _Healpix: https://healpix.jpl.nasa.gov/
@@ -126,6 +141,139 @@ When a sky brightness value (or set of values) is needed by the scheduler, it re
   https://ui.adsabs.harvard.edu/abs/2012A%26A...543A..92N/abstract
   https://ui.adsabs.harvard.edu/abs/2013A%26A...560A..91J/abstract
 
+Zernike polynomials
+===================
+
+As approximations of smoothly varying functions on the unit disk that show significant radial symmetry, Zernike coefficients are a promising candidate.
+Zernike polynomials form a set of orthogonal basis functions on the unit disk.
+This use of Zernike polynomials is directly analogous to simple Fourier-transform based lossy image compression techniques, but is more naturally applied to the unit disk, and particulary suitable for functions with rotational symmetry. In the simplest applications, the transform can be truncated to include only lower order terms. Such a truncation has the effect of blurring the image. In more sophisticated applications, terms near zero can be set to zero and the result compressed. The same approaches can be applied using the Zernike transform as well. Because the "image" being compressed is smoothly varying, only a simple truncation is explored her ( although the more sophisticated approach may be useful).
+
+There are several convertions for indexing and normalizing Zernike polynomials. Those used here are from FIXME Thebos 2002:
+
+.. math::
+   Z^{m}_n(\rho,\phi) = \begin{cases}
+                                  N^m_n \times R^m_n(\rho) \times \cos(m \phi) & m \ge 0 \\
+				  -N^m_n \times R^m_n(\rho) \times \sin(m \phi) & m \lt 0 \\
+                           \end{cases}
+
+where
+
+
+.. math::
+   N^m_n = \sqrt{\frac{2(n+1)}{1+\delta_{m0}}}
+
+and
+
+.. math::
+   R^m_n(\rho) = \sum_{s=0}^{\frac{n-m}{2}} \frac{(-1)^k\,(n-s)!}{
+   k!
+   \left ( \frac{1}{2}[n + |m| - s] \right )!
+   \left ( \frac{1}{2}[n - |m| - s] \right )!
+   }
+   \rho^{n-2s}
+
+Here, :math:`m` is the angular frequency of the term, and :math:`n` the radial order. For the purposes of storing values and coefficients in a single dimensional array, it is convenient to define a single index, the mode number:
+
+.. math::
+   j = \frac{n(n+2) + m}{2}
+
+
+Zernike coefficients that fit a function on the unit disk (the values of the Zernike transform of the function) are then:
+
+.. math::
+   \begin{align*}
+   F(\rho, \phi) & = \sum_{m,n}\left[ a_{m,n}\ Z^{m}_n(\rho,\phi) + b_{m,n}\ Z^{-m}_n(\rho,\phi) \right] \\
+                & = \sum_j c[j]\ Z[j](\rho,\phi)
+   \end{align*}
+
+:numref:`fig-zernike-z` shows :math:`Z^{m}_n(\rho,\phi)` graphically, and provides some intuition for the kinds of furctions low order Zernike coefficients can effectively represent.
+
+.. _label: fig-zernike-z
+.. figure:: /_static/basis7.png
+   :name: fig-zernike-z
+
+   The Zernike polyniomials, :math:`Z^{m}_n(\rho,\phi)`, for :math:`n<7`. The number to the upper left of each subplot shows the mode number, :math:`j` (the single-valued index).
+
+
+Zernike approximations of sky brightness
+========================================
+
+The Rubin Observatory team produced a collection of nside=32 healpix maps at 5 minute incruments from MJD 59823 (2022-09-01) through MJD 65305 (2037-09-04).
+To test the effectiveness of approximating skycalc_ sky brightness maps using truncated Zernike transforms, I fit Zernike coefficents through the 5th (21 terms), 6th (27 terms), and 11th orders (78 terms) orders to each of these sampled time steps.
+Masked values in the healpix maps (around the zenith and moon) results in an unevently sampled starting data set, so a least squares fit was used to derive the coefficients rather than a traditional sum of products. 
+
+:numref:`fig-resid-new` and :numref:`fig-resid-full` show typical skycalc_ maps, their 6th order (27 term) Zernike approximation, and residuals for dark (moon below the horizon) and bright (full moon above the horizon) sample times. The residuals show high-frequency patterns not representable by Zernike functions of this order; compare the lower left subplots of these figures with the basis functions in :numref:`fig-zernike-z`. 
+
+.. _label: fig-resid-new
+.. figure:: /_static/resid_new.png
+   :name: fig-resid-new
+	  
+   The upper two pannels show the skycalc_ sky brightness for a typical fully dark (no moon) time (in horizon coordinates, with zenith at the center) on the left, and the Zernike approximation of these values on the night.
+   The lower left figure shows the difference between the skycalc_ sky brightness and its Zernike approximation, and the lower right histogram shows the distribution of these residuals, masking the :math:`20^{\circ}` around the moon.
+	  
+.. _label: fig-resid-full
+.. figure:: /_static/resid_full.png
+   :name: fig-resid-full
+	  
+   The subplots above have the same meaning as those in :numref:`fig-resid-new`, except for a time with a full moon above the horizon.
+
+:numref:`fig-residual-hists` shows the histograms of the residualsfor each order tested, in each filter, for the first year of tested data.
+The distribution is dominated by residuals less than 0.05 magnitudes in all cases, but thin tails extend from :math:`\sim -0.3` to :math:`\sim 0.1`, accentuated by the log scale in the figure.
+Recall that the standard deviation of the residuals of the skycalc_ model with respect to actual data is :math:`\sim 0.2`: instances where the the difference between the Zernike approximation and the skycalc_ value are comparable to the precision of the skycalc_ model are rare, but they exist.
+   
+.. _label: fig-residual-hists
+.. figure:: /_static/residual_hists.png
+   :name: fig-residual_hists
+
+Examination of examples of time samples with bad residuals indicate conditions under which Zernike approximations perform most poorly.
+:numref:`fig-resid-worst` shows the maps, residuals, and histogram of residuals for the worst timestep in the first year.
+It occurs when the moon is at an altitude of :math:`\sim 20^{\circ}`, just outside the area covered by the map (which extends only to a zenith distance of :math:`67^{\circ}`).
+The worst residuals occur at the same azimuth as the moon: just above the moon on the sky.
+   
+.. _label: fig-resid-worst
+.. figure:: /_static/resid_worst.png
+   :name: fig-resid-worst
+	  
+   The subplots above have the same meaning as those in :numref:`fig-resid-new`, except for the time with the worst residuals.
+
+:numref:`fig-moon-sep-hist` and :numref:`fig-moon-alt-hist` indicate that this is typical of the worst time steps: they occurr when the moon has an altitude of :math:`\sim 20^{\circ}`, in sky within :math:`\sim 20^{\circ}` of the moon, and an altitude of less than :math:`\sim 40^{\circ}`.
+	
+.. _label: fig-moon-sep-hist
+.. figure:: /_static/moon_sep_hist.png
+   :name: fig-moon-sep-hist
+
+   A 2-dimensional histogram of the sky estimates as a function of residual between skycalc_ magnitude and its Zernike approximation, and the angular separation between the point on the sky and the moon. The color is coded according to a log scale, covering 6 orders of magnitude. Note that the worst residuals are within :math:`20^{\circ}` of the moon.
+
+.. _label: fig-moon-alt-hist
+.. figure:: /_static/moon_alt_hist.png
+   :name: fig-moon-alt-hist
+
+   A 2-dimensional histogram of the sky estimates as a function of residual between skycalc_ magnitude and its Zernike approximation, and the altitude of the moon.. The color is coded according to a log scale, covering 6 orders of magnitude. Note that the worst residuals occur when the moon is at an altitude of about :math:`20^{\circ}`.
+
+.. _label: fig-alt-hist
+.. figure:: /_static/alt_hist.png
+   :name: fig-alt-hist
+
+   A 2-dimensional histogram of the sky estimates as a function of residual between skycalc_ magnitude and its Zernike approximation, and the altitude an the sky. The color is coded according to a log scale, covering 6 orders of magnitude. Note that the worst residuals occur at altitudes below :math:`40^{\circ}` (an airmass of about 1.6).
+
+Although these histograms confirm that the very worst residuals occurr in situations similar to those shown in :numref:`fig-resid-worst`, they also show some residuals as bad as :math:`\sim 0.15` magnitudes occurr even in dark time.
+   
+.. _label: fig-resid-worst-dark
+.. figure:: /_static/resid_worst_dark.png
+   :name: fig-resid-worst-dark
+	  
+   The subplots above have the same meaning as those in :numref:`fig-resid-new`, except for the dark time (moon below the horizon) with the worst residuals.
+
+
+   
+Calculation and storage of Zernike coefficients
+===============================================
+
+
+Conclusion
+==========
+
+	  
 .. .. rubric:: References
 
 .. Make in-text citations with: :cite:`bibkey`.
