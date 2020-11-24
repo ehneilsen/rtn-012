@@ -172,7 +172,7 @@ and
    }
    \rho^{n-2s}
 
-Here, :math:`m` is the angular frequency of the term, and :math:`n` the radial order. For the purposes of storing values and coefficients in a single dimensional array, it is convenient to define a single index, the mode number:
+Here, :math:`\delta` is the Kroneker delta, :math:`m` is the angular frequency of the term, and :math:`n` the radial order. For a given radial order `n`, the angular frequency can have values :math:`-n, -n+2, -n+4, ..., n`. For the purposes of storing values and coefficients in a single dimensional array, it is convenient to define a single index, the mode number:
 
 .. math::
    j = \frac{n(n+2) + m}{2}
@@ -181,10 +181,7 @@ Here, :math:`m` is the angular frequency of the term, and :math:`n` the radial o
 Zernike coefficients that fit a function on the unit disk (the values of the Zernike transform of the function) are then:
 
 .. math::
-   \begin{align*}
-   F(\rho, \phi) & = \sum_{m,n}\left[ a_{m,n}\ Z^{m}_n(\rho,\phi) + b_{m,n}\ Z^{-m}_n(\rho,\phi) \right] \\
-                & = \sum_j c[j]\ Z[j](\rho,\phi)
-   \end{align*}
+   F(\rho, \phi) = \sum_{m,n}\left[ a_{m,n}\ Z^{m}_n(\rho,\phi) + b_{m,n}\ Z^{-m}_n(\rho,\phi) \right]
 
 :numref:`fig-zernike-z` shows :math:`Z^{m}_n(\rho,\phi)` graphically, and provides some intuition for the kinds of furctions low order Zernike coefficients can effectively represent.
 
@@ -223,8 +220,10 @@ Recall that the standard deviation of the residuals of the skycalc_ model with r
    
 .. _label: fig-residual-hists
 .. figure:: /_static/residual_hists.png
-   :name: fig-residual_hists
+   :name: fig-residual-hists
 
+   Histograms of the skycalc_ - Zernike approximation residuals, on a log scale, for all filters and with Zernike approximations to 5th, 6th, as 11th order. Note the log scale covering 7 orders of magnitude: the disctribution is sharply peaked around 0.
+	  
 Examination of examples of time samples with bad residuals indicate conditions under which Zernike approximations perform most poorly.
 :numref:`fig-resid-worst` shows the maps, residuals, and histogram of residuals for the worst timestep in the first year.
 It occurs when the moon is at an altitude of :math:`\sim 20^{\circ}`, just outside the area covered by the map (which extends only to a zenith distance of :math:`67^{\circ}`).
@@ -242,21 +241,25 @@ The worst residuals occur at the same azimuth as the moon: just above the moon o
 .. figure:: /_static/moon_sep_hist.png
    :name: fig-moon-sep-hist
 
-   A 2-dimensional histogram of the sky estimates as a function of residual between skycalc_ magnitude and its Zernike approximation, and the angular separation between the point on the sky and the moon. The color is coded according to a log scale, covering 6 orders of magnitude. Note that the worst residuals are within :math:`20^{\circ}` of the moon.
+   A 2-dimensional histogram of the sky estimates as a function of residual between skycalc_ magnitude and its Zernike approximation, and the angular separation between the point on the sky and the moon.
+   The color is coded according to a log scale, covering 6 orders of magnitude. Note that the worst residuals are within :math:`20^{\circ}` of the moon.
 
 .. _label: fig-moon-alt-hist
 .. figure:: /_static/moon_alt_hist.png
    :name: fig-moon-alt-hist
 
-   A 2-dimensional histogram of the sky estimates as a function of residual between skycalc_ magnitude and its Zernike approximation, and the altitude of the moon.. The color is coded according to a log scale, covering 6 orders of magnitude. Note that the worst residuals occur when the moon is at an altitude of about :math:`20^{\circ}`.
+   A 2-dimensional histogram of the sky estimates as a function of residual between skycalc_ magnitude and its Zernike approximation, and the altitude of the moon.. The color is coded according to a log scale, covering 6 orders of magnitude.
+   Note that the worst residuals occur when the moon is at an altitude of about :math:`20^{\circ}`.
 
 .. _label: fig-alt-hist
 .. figure:: /_static/alt_hist.png
    :name: fig-alt-hist
 
-   A 2-dimensional histogram of the sky estimates as a function of residual between skycalc_ magnitude and its Zernike approximation, and the altitude an the sky. The color is coded according to a log scale, covering 6 orders of magnitude. Note that the worst residuals occur at altitudes below :math:`40^{\circ}` (an airmass of about 1.6).
+   A 2-dimensional histogram of the sky estimates as a function of residual between skycalc_ magnitude and its Zernike approximation, and the altitude an the sky. The color is coded according to a log scale, covering 6 orders of magnitude.
+   Note that the worst residuals occur at altitudes below :math:`40^{\circ}` (an airmass of about 1.6).
 
-Although these histograms confirm that the very worst residuals occurr in situations similar to those shown in :numref:`fig-resid-worst`, they also show some residuals as bad as :math:`\sim 0.15` magnitudes occurr even in dark time.
+Although these histograms confirm that the very worst residuals occurr in situations similar to those shown in :numref:`fig-resid-worst`, they also show some residuals as bad as :math:`\sim 0.15` magnitudes occurr even in dark time. :numref:`fig-resid-worst-dark` shows the sample time with the worst residuals in dark time.
+The "spike" of brightness at an azimuth of :math:`\sim90^{\circ}` is suggestive of zodiacal light, and indeed at this timestep is near twilight, with the sun azimuth near the area with high residuals (:math:`\mbox{az}=95^{\circ}`), as one would expect if this were zodiacal light.
    
 .. _label: fig-resid-worst-dark
 .. figure:: /_static/resid_worst_dark.png
@@ -264,12 +267,141 @@ Although these histograms confirm that the very worst residuals occurr in situat
 	  
    The subplots above have the same meaning as those in :numref:`fig-resid-new`, except for the dark time (moon below the horizon) with the worst residuals.
 
+If zodial light is the cause of all of the extreme dark time residuals, then one would expect these high residuals only to occurr at low ecliptic latitude, and indeed this is what :numref:`fig-dark-ecl-lat-hist` shows.
+
+.. _label: fig-dark-ecl-lat-hist
+.. figure:: /_static/dark_ecl_lat_hist.png
+   :name: fig-dark-ecl-lat-hist
+
+   A 2-dimensional histogram of the sky estimates as a function of residual between skycalc_ magnitude and its Zernike approximation, and the ecliptic latitude. The color is coded according to a log scale, covering 6 orders of magnitude.
+   Note that the worst residuals occur at ecliptic latitudes close to 0.
 
    
-Calculation and storage of Zernike coefficients
-===============================================
+Implementation
+==============
+
+The API used by the scheduler
+-----------------------------
+
+The Rubin Observatory scheduler calls its sky brightness estimator by passing a time (as a floating point MJD) and set of healpix coordinates, which returns a dictionary of ``numpy`` arrays of sky brightnes values.
+The keys of this dictionary are the filters, and the values are arrays that hold the sky brightnes values (corresponding to the array of indices provided).
+
+>>> import numpy as np
+>>> import healpy
+>>> from lsst.sims.skybrightness_pre import SkyModelPre
+>>>
+>>> mjd = 59854.3
+>>> npix = 32
+>>>
+>>> ra1, decl1 = 0, -50
+>>> pointing1 = healpy.ang2pix(npix, ra1, decl1, lonlat=True)
+>>>
+>>> ra2, decl2 = 0, -20
+>>> pointing2 = healpy.ang2pix(npix, ra2, decl2, lonlat=True)
+>>>
+>>> healpix_idxs = np.array((pointing1, pointing2))
+>>>
+>>> sky_model_pre = SkyModelPre()
+>>> sky_brightness = sky_model_pre.returnMags(mjd, healpix_idxs)
+>>>
+>>> print("Sky brightness in i at pointing 1:",  sky_brightness['i'][0])
+Sky brightness in i at pointing 1: 20.211941485692027
+>>> print("Sky brightness in g at pointing 2:",  sky_brightness['g'][1])
+Sky brightness in g at pointing 2: 21.908871333901892
+
+If no healpix ids are provided in the call to ``returnMags``, then the array of sky values over the whole sphere is returned, and the healpix ids are the indices of the array.
+
+Computation from Zernike coefficients and polynomials
+-----------------------------------------------------
+
+To compute estimates of the sky brightness, the ``lsst.sims.skybrightness_pre.zernike.ZernikeSky`` class evaluates
+
+.. math::
+   F(t, \rho, \phi) = \sum_j c[j](t)\ Z[j](\rho,\phi)
+
+:math:`t` represents the time (stored as an MJD), and :math:`\rho, \phi` the coordinates in the disk over which the Zernike polynomials are orthogonal.
+As used in the ``ZernikeSky`` class, :math:`\phi` is the azimuthal angle in horizon coordinates, and :math:`\rho = \frac{\mathrm{zd}}{\mathrm{zd_{max}}}`, where zd is the angular zenith distance, and zd :sub:`max` the maximum zenith distance for which surface brightness is to be calculated.
+      
+The mode number, :math:`j`, is used here rather that the more traditional radial order and angular frequency indices (:math:`n, m`) to simplify storage in a ``pandas.DataFrame`` or ``numpy`` array.
+The sum contains two components: the coefficients, :math:`c[j](t)`, and the values of the Zernike polynomial themselves, :math:`Z[j](\rho,\phi)`.
+The values of the coefficients for a given mode number is a function only of time, not location on the sky, while the values of the Zernike polynomials (for a given mode number) are a function only of the location on the sky (in horizon coordinates).
+
+To implement the API shown above, the implementation of the Zernike-based sky brightness code requires values of :math:`c[j]` at the ``mjd`` requested, and :math:`Z[j](\rho,\phi)` for each healpix index requested.
+
+Estimation of Zernike coefficients :math:`c[j](t)`
+--------------------------------------------------
+
+The ``ZernikeSky.load_coeffs`` method reads values for the Zernike coefficients from an ``hdf5`` file into a ``pandas.DataFrame``, with columns for each Zernike mode number and rows for each time step fit, such that each row corresponds to a time at which the ``lsst.sims.skybrightness_pre.SkyModelPre`` stores a full healpix map.
+Each (``nside=32``) healpix map contains 12288 values, while a row in the ``pandas.DataFrame`` of Zernike coefficients though a radial of 6 has 28 values, a factor of :math:`\sim 439` times more compact.
 
 
+:numref:`fig-worst-coeff-vs-time` shows the variation in the values of the Zernike coeffients over time, over the course of a dynamic night.
+At the end of evening twiling, the moon is below the horizon, but rises shortly thereafter.
+The effect is particulary clean in the :math:`Z_0^0` term, in which the sky brightness drops sharply at the start of the night (evening twilight), briefly plateaus (the portion of the night during which the moon is below the horizon), the brightens as the moon rises.
+Over the course of the night, the moon rises into the area covered by the sky approximation, transits, and begins to set.
+It can be seen from the plots that the contribution of each Zernike polynomial drops as the radial order increases, with the lowest order terms having the most significant influence on the calculated sky brightness.
+It can also be seen that, except at the precise time step at which the moon rises, the values of the coefficients vary smoothly with time relative to the sampling in time:  values of coefficients between points can be effectively estimated by simple linear interpolation.
+This is what the ``lsst.sims.skybrightness_pre.zernike.ZernikeSky`` class does.
+
+.. _label: fig-worst-coeff-vs-time
+.. figure:: /_static/worst_coeff_vs_time.png
+   :name: fig-worst-coeff-vs-time
+
+   The values of the Zernike coefficients for a particularly dynamic night, in which the moon begins beneath the horizon and then rises and transits over the course of the night.
+   The coefficients are scaled such that the values on the vertical axis represent the maximum change in magnitude contributed by each mode number.
+   The heavy red points show the values for `i` band, while the fainter points in other colors represent other filters.
+
+Estimation of Zernike polynomial values :math:`Z[j](\rho, \phi)`
+----------------------------------------------------------------
+   
+While the coefficients themselves are functions of the time and independent of the location on the sky, the values of the Zernike polynomials of a given mode number are themselves are functions only of the location on the sky (in horizon coordinates).
+Each :math:`Z_m^n(\rho, \phi)` term is the product of a polynomial in :math:`\rho` and a trigonometric fuction of :math:`\phi`, making it the most computationally expensive requirements for calculating the :math:`F(t, \rho, \phi)`.
+The values, however, of :math:`Z_m^n(\rho, \phi)` do not change with time.
+If we are making repeated calculations at specific values of :math:`\rho, \phi`, these values can be computed once and cached.
+To fulfill the API, ``ZernikeSky`` must provide sky brightness values at a predefined set of coordinates, suggesting that that we can simply calculate :math:`Z_m^n` at these values, but there is a problem: the healpix coordinates in the argument are predefined in equatorial coordinates, but the values of :math:`Z_m^n` are constant in horizon coordinates.
+The values of :math:`\rho, \phi` for the given set of healpix values are a function of the local Sidereal time (LST), so the values of :math:`Z_m^n` are as well.
+   
+.. _label: fig-Z-vs-LST
+.. figure:: /_static/Z_vs_LST.png
+   :name: fig-Z-vs-LST
+
+   The variation of :math:`Z_m^n` as a function of LST for several sample equatorial healpixels at different declinations.
+   (Variation in R.A. shifts the values horizontally, but does not affect the shape of the curves.)
+   Sidereal times for which the curves have no values shown are time at which these pointings are at a zenith distance greater than the range of the Zerinke function.
+   The lowest order functions (shown in the upper rows) correspond to Zernikes that have the greatest influence on the ultimate sky brightness estimate (see corresponding plots in :numref:`fig-worst-coeff-vs-time`), have Zernike polynomials that vary most smoothly over the sky (:numref:`fig-zernike-z`), and have the smoothest behavior in this plot. 
+
+Rather than calculate :math:`Z_m^n(\rho, \phi)` "from scratch" for each healpix at the time requested, ``ZernikeSky`` pre-computes ``Z[j][hpix]`` at a sequences of LST values for each Zernike mode number and equatorial healpixel, and interpolates to obtain the value of ``Z[j][hpix]`` at the LST corresponding to the MJD with which it is called. The inset in the upper left of :numref:`fig-Z-vs-LST` shows sampled points for five different healpixels and different declinations. 
+
+Computing sky brightness with ``ZernikeSky``
+--------------------------------------------
+
+To calculate the sky brightness using an API that following that used by the scheduler:
+
+>>> import numpy as np
+>>> import healpy
+>>> from lsst.sims.skybrightness_pre.zernike import SkyModelZernike
+>>>
+>>> mjd = 59854.3
+>>> npix = 32
+>>>
+>>> ra1, decl1 = 0, -50
+>>> pointing1 = healpy.ang2pix(npix, ra1, decl1, lonlat=True)
+>>>
+>>> ra2, decl2 = 0, -20
+>>> pointing2 = healpy.ang2pix(npix, ra2, decl2, lonlat=True)
+>>>
+>>> healpix_idxs = np.array((pointing1, pointing2))
+>>>
+>>> sky_model = SkyModelZernike()
+>>> sky_brightness = sky_model.returnMags(mjd, healpix_idxs)
+>>>
+>>> print("Sky brightness in i at pointing 1:",  sky_brightness['i'][0])
+Sky brightness in i at pointing 1: 20.240004108584117
+>>> print("Sky brightness in g at pointing 2:",  sky_brightness['g'][1])
+Sky brightness in g at pointing 2: 21.967150461105156
+
+This example relies on finding the ``hdf`` file with the Zernike coefficients in ``${SIMS_SKYBRIGHTNESS_DATA}/zernike/zernike.h5``. If it is located elsewhere, the first argument in the instantiation of ``SkyModelZernike`` should be the path to this file.
+	  
 Conclusion
 ==========
 
