@@ -53,6 +53,40 @@
 .. Add content here.
 .. Do not include the document title (it's automatically added from metadata.yaml).
 
+Summary
+=======
+
+#. Sky brightness is diffuse light spread across the field of view of the camera. See :numref:`fig-healpix-map`.
+  
+   * Sky brightness includes components from emission from the atmosphere,  scattered light from various source (the Moon, Sun, etc.), and Zodiacal light.
+   * Sky brightness varies smoothly over the sky, except near the moon.
+   * Sky brightness varies slowly with time, except when the moon is rising or setting.
+
+#. The Rubin Observatory scheduler requires an estimate of the foreground sky brightness over the visible sky at each time for which it schedules exposures.
+     
+   * The limiting magnitude (which depends on sky brightness) is one of the "features" the feature-based scheduler uses to order candidate exposures.
+   * When Poisson noise from the sky background is the dominante source of noise, the error in limiting magnitude due to an error in sky brightness (in magnitudes/asec^2) is half the error in sky brightness. For example, an uncertainty of 0.2 magnitudes in sky brightness corresponds to an uncertainty of 0.1 magnitudes is limiting magnitude.
+       
+#. The current version of the scheduler uses a lookup table of sky values.
+
+   * The Rubin Obs. scheduler looks up sky brightness values in a set of healpix_ (nside=32) sky maps, for each of the six filters, at 5 to 15 minute timesteps from 2022-09-01 to 2037-09-04 (excluding daytime). These healpix_ maps are created using skycalc_.
+   * skycalc_ is a sky brightness model written for the exposure time calculator used by the European Southern Observatory’s (ESO) Very Large Telescope (VLT) at Cerro Paranal.
+   * skycalc_ estimates the sky brightness in each Rubin Observatory filter by integrating the modeled SED over the corresponding instrument transmission curves.
+   * The full set of healpix_ maps occupy 144 GiB of disk space.
+
+#. Approximations of the sky brightness maps can be saved compactly using a Zernike transform.
+   
+   * Zernike polynomials form a set of othrogonal basis functions on the unit disk. See :numref:`fig-zernike-z`.
+   * Low order terms of a Zerinke transform can approximate smoothly varying functions over the unit disk.
+   * Residuals between the skycalc_ healpix maps and their approximation with a 6th order (27 term) Zernike approximation have a standard deviation of between 0.01 and 0.0X in all bands, much less than the standard deviation of the residuals between the skycalc_ model and the observed sky: uncertainty in the residuals are not significant compared to the uncertainty of :math:`\sim 0.2` in the model itself.
+   * The residuals do not follow a normal distribution; the distribution has narrow tails extending from -0.22 magnitudes to 0.12 magintudes. See rb:numref:`fig-resid-full`.
+   * The extreme tails in the residuals occurr near the moon, when the moon is itself at high airmass. See :numref:`fig-resid-worst`, :numref:`fig-moon-sep-hist`, and :numref:`fig-moon-alt-hist`.
+
+#. The ``lsst.sims.sky_brightness_pre.zernike`` python module provides an interface for use of Zernike coefficients to store sky brightness.
+
+   * This module uses coefficients stored in an ``hdf5`` file with a size of 294MiB (for coefficints up to 6th order).
+   * This module interpolates Zernike coefficients for times not exactly covered by the original set of healpix maps.
+   * This module provides an API similar to that of ``lsst.sims.sky_brightness_pre.SkyModelPre``, but does not include options no longer needed by current versions of the scheduler.
 
 Overview
 ========
@@ -61,8 +95,8 @@ The Rubin Observatory scheduler uses the expected depth (limiting magnitude) of 
 One of the primary factors in calculating this depth is the sky brightness: diffuse light not orginating in any object the survey is interested in including in its catalog. 
 The present (November, 2020) version of the scheduler estimates skybrightness values using the ESO skycalc_ sky brightness estimator. 
 Computing values using the skycalc_ software is sufficiently cumbersome that, rather than calculate sky brightness estimates at the time they are needed, the scheduler development team pre-calculates and caches all sky values that might be needed over the course of the survey.
-These pre-computed values are currently stored in Healpix_ maps with nside=32, sampled every 5 minutes.
-This format results in a set of files that are inconveniently large: 152GiB all told.
+These pre-computed values are currently stored in Healpix_ maps with nside=32, sampled every 5 to 15 minutes.
+This format results in a set of files that are inconveniently large: 144GiB all told.
 Sky brightness typically varies smoothly, both over the sky and over time.
 Rather than store values for full healpix maps, significant storage space can be saved by saving the coefficients for a Zernike polynomial tha approximates the sky values to be cached.
 After giving a brief overview of the sky brightness estimate itself, this note describes an implementation of such an approximation, and examines its implications for disk space required, time taken to provide the scheduler sky values, and precision with whith the skycalc_ values are approximated. 
@@ -71,11 +105,11 @@ Sky value estimation
 ====================
 
 The "sky brightness" consists of diffuse light from (mostly) foreground sources, spread smoothly across the detector.
-The primary contributing sources include airglow, moon and starlight scattered off of particles in the Earth's atmospher, and Zodiacal light (sunlight scattered off of interplanetary dust in the disk of the solar system).
+The primary contributing sources include airglow, moon and starlight scattered off of particles in the Earth's atmosphere, and Zodiacal light (sunlight scattered off of interplanetary dust in the disk of the solar system).
 ESO's skycalc_ software estimates the full spectral energy distribution of the sky brightness using physical models, including light singly and multiply scattered though Mie and Rayleigh scattering.
 
-To prepare the arrays of pre-computed sky brightness values, the scheduling team integrates skycalc-generated spectra over each of the Rubin Observatory bandpasses, for each (nside=32) healpixel, in each 5 minute interval in survey schedule.
-The resultant data-set is divided by date into a set of files totaling 152GiB. 
+To prepare the arrays of pre-computed sky brightness values, the scheduling team integrates skycalc-generated spectra over each of the Rubin Observatory bandpasses, for each (nside=32) healpixel, in each 5 to 15 minute interval in survey schedule.
+The resultant data-set is divided by date into a set of files totaling 144GiB. 
 When a sky brightness value (or set of values) is needed by the scheduler, it reads the file for the relevant date range from disk (if it is not already loaded) and looks up the value (or values).
 
 :numref:`fig-healpix-map` shows extreme examples of such sky brightness maps.
@@ -177,7 +211,7 @@ Masked values in the healpix maps (around the zenith and moon) results in an une
    The subplots above have the same meaning as those in :numref:`fig-resid-new`, except for a time with a full moon above the horizon.
 
 :numref:`fig-residual-hists` shows the histograms of the residualsfor each order tested, in each filter, for the first year of tested data.
-The distribution is dominated by residuals less than 0.05 magnitudes in all cases, but thin tails extend from :math:`\sim -0.3` to :math:`\sim 0.1`, accentuated by the log scale in the figure.
+The distribution is dominated by residuals :less than 0.05 magnitudes in all cases, but thin tails extend from :math:`\sim -0.3` to :math:`\sim 0.1`, accentuated by the log scale in the figure.
 Recall that the standard deviation of the residuals of the skycalc_ model with respect to actual data is :math:`\sim 0.2`: instances where the the difference between the Zernike approximation and the skycalc_ value are comparable to the precision of the skycalc_ model are rare, but they exist.
    
 .. _label: fig-residual-hists
