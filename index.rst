@@ -56,10 +56,10 @@
 Summary
 =======
 
-#. Sky brightness is diffuse light spread across the field of view of the camera. See :numref:`fig-healpix-map`.
+#. Sky brightness is diffuse light spread across the field of view of the camera.
   
    * Sky brightness includes components from emission from the atmosphere,  scattered light from various source (the Moon, Sun, etc.), and Zodiacal light.
-   * Sky brightness varies smoothly over the sky, except near the moon.
+   * Sky brightness varies smoothly over the sky, except near the moon. See :numref:`fig-healpix-map`.
    * Sky brightness varies slowly with time, except when the moon is rising or setting.
 
 #. The Rubin Observatory scheduler requires an estimate of the foreground sky brightness over the visible sky at each time for which it schedules exposures.
