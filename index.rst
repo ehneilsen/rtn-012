@@ -65,26 +65,26 @@ Summary
 #. The Rubin Observatory scheduler requires an estimate of the foreground sky brightness over the visible sky at each time for which it schedules exposures.
      
    * The limiting magnitude (which depends on sky brightness) is one of the "features" the feature-based scheduler uses to order candidate exposures.
-   * When Poisson noise from the sky background is the dominante source of noise, the error in limiting magnitude due to an error in sky brightness (in magnitudes/asec^2) is half the error in sky brightness. For example, an uncertainty of 0.2 magnitudes in sky brightness corresponds to an uncertainty of 0.1 magnitudes is limiting magnitude.
+   * When Poisson noise from the sky background is the dominant source of noise, the error in limiting magnitude due to an error in sky brightness (in magnitudes/asec^2) is half the error in sky brightness. For example, an uncertainty of 0.2 magnitudes in sky brightness corresponds to an uncertainty of 0.1 magnitudes is limiting magnitude.
        
-#. The current version of the scheduler uses a lookup table of sky values.
+#. The current version of the scheduler uses a look-up table of sky values.
 
-   * The Rubin Obs. scheduler looks up sky brightness values in a set of healpix_ (nside=32) sky maps, for each of the six filters, at 5 to 15 minute timesteps from 2022-09-01 to 2037-09-04 (excluding daytime). These healpix_ maps are created using skycalc_.
+   * The Rubin Obs. scheduler looks up sky brightness values in a set of healpix_ (nside=32) sky maps, for each of the six filters, at 5 to 15 minute time steps from 2022-09-01 to 2037-09-04 (excluding daytime). These healpix_ maps are created using skycalc_.
    * skycalc_ is a sky brightness model written for the exposure time calculator used by the European Southern Observatory’s (ESO) Very Large Telescope (VLT) at Cerro Paranal.
    * skycalc_ estimates the sky brightness in each Rubin Observatory filter by integrating the modeled SED over the corresponding instrument transmission curves.
    * The full set of healpix_ maps occupy 144 GiB of disk space.
 
 #. Approximations of the sky brightness maps can be saved compactly using a Zernike transform.
    
-   * Zernike polynomials form a set of othrogonal basis functions on the unit disk. See :numref:`fig-zernike-z`.
+   * Zernike polynomials form a set of orthogonal basis functions on the unit disk. See :numref:`fig-zernike-z`.
    * Low order terms of a Zerinke transform can approximate smoothly varying functions over the unit disk.
    * Residuals between the skycalc_ healpix maps and their approximation with a 6th order (27 term) Zernike approximation have a standard deviation of between 0.006 and 0.014 in all bands, much less than the standard deviation of the residuals between the skycalc_ model and the observed sky: typical uncertainty in the residuals is not significant compared to the uncertainty of :math:`\sim 0.2` in the model itself.
-   * The residuals do not follow a normal distribution; the distribution has narrow tails extending from -0.27 magnitudes to 0.12 magintudes. See rb:numref:`fig-resid-full`.
-   * The extreme tails in the residuals occurr near the moon, when the moon is itself at high airmass. See :numref:`fig-resid-worst`, :numref:`fig-moon-sep-hist`, and :numref:`fig-moon-alt-hist`.
+   * The residuals do not follow a normal distribution; the distribution has narrow tails extending from -0.27 magnitudes to 0.12 magnitudes. See rb:numref:`fig-resid-full`.
+   * The extreme tails in the residuals occur near the moon, when the moon is itself at high airmass. See :numref:`fig-resid-worst`, :numref:`fig-moon-sep-hist`, and :numref:`fig-moon-alt-hist`.
 
 #. The ``lsst.sims.sky_brightness_pre.zernike`` python module provides an interface for use of Zernike coefficients to store sky brightness.
 
-   * This module uses coefficients stored in an ``hdf5`` file with a size of 294MiB (for coefficints up to 6th order).
+   * This module uses coefficients stored in an ``hdf5`` file with a size of 294MiB (for coefficients up to 6th order).
    * This module interpolates Zernike coefficients for times not exactly covered by the original set of healpix maps.
    * This module provides an API similar to that of ``lsst.sims.sky_brightness_pre.SkyModelPre``, but does not include options no longer needed by current versions of the scheduler.
 
@@ -101,28 +101,28 @@ The current scheduler uses a set of three features:
 2. Survey progress: the difference between the number of already completed exposures (at each pointing, in each band) and the number desired (for the current time).
 3. The difference between the predicted point source :math:`5\sigma` limiting magnitude (at each pointing, in each band) and the :math:`5\sigma` in dark time on the meridian (for that pointing and band).
 
-The third feature in this list is a measure of the expected data quality: the faintness of objects whose brightnesses can be measured to a reference precesion.
+The third feature in this list is a measure of the expected data quality: the faintness of objects whose brightnesses can be measured to a reference precision.
 There are two dominant factors that influence the limiting magnitude: the point spread function (the sharpness of the image), and the noise in the image.
 The dominant factor in the noise relevant to objects near the magnitude limit is from statistical uncertainty in the light that covers the same pixels as the image of the object, but is not from the object being measured.
 For isolated point sources, this is from "sky brightness", diffuse light that covers the entire image.
-Estimation of the sky brightness is therefore essenital for the predicting the limiting magnitude, which is required to calculate the reward function, and therefor for selection of exposures by the scheduler.
+Estimation of the sky brightness is therefore essential for the predicting the limiting magnitude, which is required to calculate the reward function, and therefor for selection of exposures by the scheduler.
 
 Sky brightness arises from a variety of sources, including:
 
-* airglow, light emmitted by the Earth's upper atmosphere from a variety of causes, including recombination of atoms photoionized by the Sun;
+* airglow, light emitted by the Earth's upper atmosphere from a variety of causes, including recombination of atoms photo-ionized by the Sun;
 * twilight, sunlight scattered by the Earth's atmosphere when the Sun is just under the horizon;
 * starlight and moonlight scattered by the Earth's atmosphere;
 * Zodiacal light, sunlight scattered by dust in the plane of our solar system; and
-* light polution, light from terrestrial sources scattered by the Earth's atmosphere.
+* light pollution, light from terrestrial sources scattered by the Earth's atmosphere.
 
-Krisciunas and Schaefer (1991) FIXME describe a simple model for estimating using a highly simplified model: airglow from a thin spherical shell in the atmosphere, and single scattering of moonlight in the atmosphere.
+:cite:`1991PASP..103.1033K`  describe a simple model for estimating using a highly simplified model: airglow from a thin spherical shell in the atmosphere, and single scattering of moonlight in the atmosphere.
 The Dark Energy Survey (DES) scheduler used a refinement of this model, plus a rough model for twilight, to estimate the sky brightness to between 0.2 and 0.3 :math:`\frac{\textrm{mag}}{\textrm{asec}^2}`, depending on the band, for dark and moony skies outside of twilight.
 (Bluer bands had lower residuals.) 
-ESO's skycalc_ software improves on this model in several ways, estimating the full spectral energy distribution of the sky brightness using physical models for atmospheric processes that result in airglaw, multiple scattering of starlight and moonlight, and a model for Zodiacal light.
-These improvements result in a model that estimates the sky brightness with residuals of 0.2 :math:`\frac{\textrm{mag}}{\textrm{asec}^2}`  across all bands FIXME 2013A%26A...560A..91J.
+ESO's skycalc_ software improves on this model in several ways, estimating the full spectral energy distribution of the sky brightness using physical models for atmospheric processes that result in airglow, multiple scattering of starlight and moonlight, and a model for Zodiacal light.
+These improvements result in a model that estimates the sky brightness with residuals of 0.2 :math:`\frac{\textrm{mag}}{\textrm{asec}^2}`  across all bands (:cite:`2013A&A...560A..91J`).
 
 :numref:`fig-healpix-map` shows examples of sky brightness maps calculated by skycalc_, for times when the moon is down (so the sky brightness is dominated by airglow), and when the moon is near full and above the horizon (so scattered moonlight is a major contributor to sky brightness). In both cases, the sky brightness varies smoothly.
-The sharpent variation occurrs where the sky is brightest: near the moon, and just above the maximum airmass: locations on the sky the scheduler will avoid anyway.
+The sharpest variation occurs where the sky is brightest: near the moon, and just above the maximum airmass: locations on the sky the scheduler will avoid anyway.
 
 .. _label: fig-healpix-map
 .. figure:: /_static/healpix_map.png
@@ -148,13 +148,13 @@ It therefore needs values for sky brightness estimates on these sample points, a
 
 It is impractical to use the skycalc_ software to calculate these values on demand.
 Instead, the scheduling team pre-calculates the sky brightness at these sample points at a set of sample times (every 5 to 15 minutes for each night between 2022-09-01 and 2037-09-04, covering the full date range of LSST).
-These data are saved in a set of files totalling 144 GiB.
+These data are saved in a set of files totaling 144 GiB.
 When evaluating the reward function, the scheduler looks up the pre-computed sky brightness values near the desired times, and interpolates for the desired time.
 
 .. _Healpix: https://healpix.jpl.nasa.gov/
 
-The Rubin Observatory scheduler calls its sky brightness estimator by passing a time (as a floating point MJD) and set of healpix coordinates, which returns a dictionary of ``numpy`` arrays of sky brightnes values.
-The keys of this dictionary are the filters, and the values are arrays that hold the sky brightnes values (corresponding to the array of indices provided).
+The Rubin Observatory scheduler calls its sky brightness estimator by passing a time (as a floating point MJD) and set of healpix coordinates, which returns a dictionary of ``numpy`` arrays of sky brightness values.
+The keys of this dictionary are the filters, and the values are arrays that hold the sky brightness values (corresponding to the array of indices provided).
 
 >>> import numpy as np
 >>> import healpy
@@ -196,9 +196,9 @@ Background: Zernike polynomials as basis functions
 
 As approximations of smoothly varying functions on the unit disk that show significant radial symmetry, Zernike coefficients are a promising candidate.
 Zernike polynomials form a set of orthogonal basis functions on the unit disk.
-This use of Zernike polynomials is directly analogous to simple Fourier-transform based lossy image compression techniques, but is more naturally applied to the unit disk, and particulary suitable for functions with rotational symmetry. In the simplest applications, the transform can be truncated to include only lower order terms. Such a truncation has the effect of blurring the image. In more sophisticated applications, terms near zero can be set to zero and the result compressed. The same approaches can be applied using the Zernike transform as well. Because the "image" being compressed is smoothly varying, only a simple truncation is explored her ( although the more sophisticated approach may be useful).
+This use of Zernike polynomials is directly analogous to simple Fourier-transform based lossy image compression techniques, but is more naturally applied to the unit disk, and particularly suitable for functions with rotational symmetry. In the simplest applications, the transform can be truncated to include only lower order terms. Such a truncation has the effect of blurring the image. In more sophisticated applications, terms near zero can be set to zero and the result compressed. The same approaches can be applied using the Zernike transform as well. Because the "image" being compressed is smoothly varying, only a simple truncation is explored her ( although the more sophisticated approach may be useful).
 
-There are several convertions for indexing and normalizing Zernike polynomials. Those used here are from FIXME Thebos 2002:
+There are several conventions for indexing and normalizing Zernike polynomials. Those used here are from :cite:`thibos_standards_2002`:
 
 .. math::
    Z^{m}_n(\rho,\phi) = \begin{cases}
@@ -222,7 +222,7 @@ and
    }
    \rho^{n-2s}
 
-Here, :math:`\delta` is the Kroneker delta, :math:`m` is the angular frequency of the term, and :math:`n` the radial order. For a given radial order `n`, the angular frequency can have values :math:`-n, -n+2, -n+4, ..., n`. For the purposes of storing values and coefficients in a single dimensional array, it is convenient to define a single index, the mode number:
+Here, :math:`\delta` is the Kronecker delta, :math:`m` is the angular frequency of the term, and :math:`n` the radial order. For a given radial order `n`, the angular frequency can have values :math:`-n, -n+2, -n+4, ..., n`. For the purposes of storing values and coefficients in a single dimensional array, it is convenient to define a single index, the mode number:
 
 .. math::
    j = \frac{n(n+2) + m}{2}
@@ -239,7 +239,7 @@ Zernike coefficients that fit a function on the unit disk (the values of the Zer
 .. figure:: /_static/basis7.png
    :name: fig-zernike-z
 
-   The Zernike polyniomials, :math:`Z^{m}_n(\rho,\phi)`, for :math:`n<7`. The number to the upper left of each subplot shows the mode number, :math:`j` (the single-valued index).
+   The Zernike polynomials, :math:`Z^{m}_n(\rho,\phi)`, for :math:`n<7`. The number to the upper left of each subplot shows the mode number, :math:`j` (the single-valued index).
 
 Implementation
 --------------
@@ -268,9 +268,9 @@ The ``ZernikeSky.load_coeffs`` method reads values for the Zernike coefficients 
 Each (``nside=32``) healpix map contains 12288 values, while a row in the ``pandas.DataFrame`` of Zernike coefficients though a radial of 6 has 28 values, a factor of :math:`\sim 439` times more compact.
 
 
-:numref:`fig-worst-coeff-vs-time` shows the variation in the values of the Zernike coeffients over time, over the course of a dynamic night.
-At the end of evening twiling, the moon is below the horizon, but rises shortly thereafter.
-The effect is particulary clean in the :math:`Z_0^0` term, in which the sky brightness drops sharply at the start of the night (evening twilight), briefly plateaus (the portion of the night during which the moon is below the horizon), the brightens as the moon rises.
+:numref:`fig-worst-coeff-vs-time` shows the variation in the values of the Zernike coefficients over time, over the course of a dynamic night.
+At the end of evening twilight, the moon is below the horizon, but rises shortly thereafter.
+The effect is particularly clean in the :math:`Z_0^0` term, in which the sky brightness drops sharply at the start of the night (evening twilight), briefly plateaus (the portion of the night during which the moon is below the horizon), the brightens as the moon rises.
 Over the course of the night, the moon rises into the area covered by the sky approximation, transits, and begins to set.
 It can be seen from the plots that the contribution of each Zernike polynomial drops as the radial order increases, with the lowest order terms having the most significant influence on the calculated sky brightness.
 It can also be seen that, except at the precise time step at which the moon rises, the values of the coefficients vary smoothly with time relative to the sampling in time:  values of coefficients between points can be effectively estimated by simple linear interpolation.
@@ -288,7 +288,7 @@ Estimation of Zernike polynomial values :math:`Z[j](\rho, \phi)`
 ................................................................
    
 While the coefficients themselves are functions of the time and independent of the location on the sky, the values of the Zernike polynomials of a given mode number are themselves are functions only of the location on the sky (in horizon coordinates).
-Each :math:`Z_m^n(\rho, \phi)` term is the product of a polynomial in :math:`\rho` and a trigonometric fuction of :math:`\phi`, making it the most computationally expensive requirements for calculating the :math:`F(t, \rho, \phi)`.
+Each :math:`Z_m^n(\rho, \phi)` term is the product of a polynomial in :math:`\rho` and a trigonometric function of :math:`\phi`, making it the most computationally expensive requirements for calculating the :math:`F(t, \rho, \phi)`.
 The values, however, of :math:`Z_m^n(\rho, \phi)` do not change with time.
 If we are making repeated calculations at specific values of :math:`\rho, \phi`, these values can be computed once and cached.
 To fulfill the API, ``ZernikeSky`` must provide sky brightness values at a predefined set of coordinates, suggesting that that we can simply calculate :math:`Z_m^n` at these values, but there is a problem: the healpix coordinates in the argument are predefined in equatorial coordinates, but the values of :math:`Z_m^n` are constant in horizon coordinates.
@@ -340,8 +340,8 @@ If it is located elsewhere, the first argument in the instantiation of ``SkyMode
 Analysis
 --------
 
-To test the effectiveness of approximating skycalc_ sky brightness maps using truncated Zernike transforms, I fit Zernike coefficents through the 5th (21 terms), 6th (27 terms), and 11th orders (78 terms) orders to each of these sampled time steps.
-Masked values in the healpix maps (around the zenith and moon) results in an unevently sampled starting data set, so a least squares fit was used to derive the coefficients rather than a traditional sum of products. 
+To test the effectiveness of approximating skycalc_ sky brightness maps using truncated Zernike transforms, I fit Zernike coefficients through the 5th (21 terms), 6th (27 terms), and 11th orders (78 terms) orders to each of these sampled time steps.
+Masked values in the healpix maps (around the zenith and moon) results in an unevenly sampled starting data set, so a least squares fit was used to derive the coefficients rather than a traditional sum of products. 
 
 :numref:`fig-resid-new` and :numref:`fig-resid-full` show typical skycalc_ maps, their 6th order (27 term) Zernike approximation, and residuals for dark (moon below the horizon) and bright (full moon above the horizon) sample times. The residuals show high-frequency patterns not representable by Zernike functions of this order; compare the lower left subplots of these figures with the basis functions in :numref:`fig-zernike-z`. 
 
@@ -349,7 +349,7 @@ Masked values in the healpix maps (around the zenith and moon) results in an une
 .. figure:: /_static/resid_new.png
    :name: fig-resid-new
 	  
-   The upper two pannels show the skycalc_ sky brightness for a typical fully dark (no moon) time (in horizon coordinates, with zenith at the center) on the left, and the Zernike approximation of these values on the night.
+   The upper two panels show the skycalc_ sky brightness for a typical fully dark (no moon) time (in horizon coordinates, with zenith at the center) on the left, and the Zernike approximation of these values on the night.
    The lower left figure shows the difference between the skycalc_ sky brightness and its Zernike approximation, and the lower right histogram shows the distribution of these residuals, masking the :math:`20^{\circ}` around the moon.
 	  
 .. _label: fig-resid-full
@@ -391,10 +391,10 @@ Recall that the standard deviation of the residuals of the skycalc_ model with r
 .. figure:: /_static/residual_hists.png
    :name: fig-residual-hists
 
-   Histograms of the skycalc_ - Zernike approximation residuals, on a log scale, for all filters and with Zernike approximations to 5th, 6th, as 11th order. Note the log scale covering 7 orders of magnitude: the disctribution is sharply peaked around 0.
+   Histograms of the skycalc_ - Zernike approximation residuals, on a log scale, for all filters and with Zernike approximations to 5th, 6th, as 11th order. Note the log scale covering 7 orders of magnitude: the distribution is sharply peaked around 0.
 	  
 Examination of examples of time samples with bad residuals indicate conditions under which Zernike approximations perform most poorly.
-:numref:`fig-resid-worst` shows the maps, residuals, and histogram of residuals for the worst timestep in the first year.
+:numref:`fig-resid-worst` shows the maps, residuals, and histogram of residuals for the worst time step in the first year.
 It occurs when the moon is at an altitude of :math:`\sim 20^{\circ}`, just outside the area covered by the map (which extends only to a zenith distance of :math:`67^{\circ}`).
 The worst residuals occur at the same azimuth as the moon: just above the moon on the sky.
    
@@ -427,8 +427,8 @@ The worst residuals occur at the same azimuth as the moon: just above the moon o
    A 2-dimensional histogram of the sky estimates as a function of residual between skycalc_ magnitude and its Zernike approximation, and the altitude an the sky. The color is coded according to a log scale, covering 6 orders of magnitude.
    Note that the worst residuals occur at altitudes below :math:`40^{\circ}` (an airmass of about 1.6).
 
-Although these histograms confirm that the very worst residuals occurr in situations similar to those shown in :numref:`fig-resid-worst`, they also show some residuals as bad as :math:`\sim 0.15` magnitudes occurr even in dark time. :numref:`fig-resid-worst-dark` shows the sample time with the worst residuals in dark time.
-The "spike" of brightness at an azimuth of :math:`\sim90^{\circ}` is suggestive of zodiacal light, and indeed at this timestep is near twilight, with the sun azimuth near the area with high residuals (:math:`\mbox{az}=95^{\circ}`), as one would expect if this were zodiacal light.
+Although these histograms confirm that the very worst residuals occur in situations similar to those shown in :numref:`fig-resid-worst`, they also show some residuals as bad as :math:`\sim 0.15` magnitudes occur even in dark time. :numref:`fig-resid-worst-dark` shows the sample time with the worst residuals in dark time.
+The "spike" of brightness at an azimuth of :math:`\sim90^{\circ}` is suggestive of zodiacal light, and indeed at this time step is near twilight, with the sun azimuth near the area with high residuals (:math:`\mbox{az}=95^{\circ}`), as one would expect if this were zodiacal light.
    
 .. _label: fig-resid-worst-dark
 .. figure:: /_static/resid_worst_dark.png
@@ -436,7 +436,7 @@ The "spike" of brightness at an azimuth of :math:`\sim90^{\circ}` is suggestive 
 	  
    The subplots above have the same meaning as those in :numref:`fig-resid-new`, except for the dark time (moon below the horizon) with the worst residuals.
 
-If zodial light is the cause of all of the extreme dark time residuals, then one would expect these high residuals only to occurr at low ecliptic latitude, and indeed this is what :numref:`fig-dark-ecl-lat-hist` shows.
+If zodiacal light is the cause of all of the extreme dark time residuals, then one would expect these high residuals only to occur at low ecliptic latitude, and indeed this is what :numref:`fig-dark-ecl-lat-hist` shows.
 
 .. _label: fig-dark-ecl-lat-hist
 .. figure:: /_static/dark_ecl_lat_hist.png
@@ -448,8 +448,8 @@ If zodial light is the cause of all of the extreme dark time residuals, then one
 Timing
 ======
 
-The calculation of the Zernike sky requires computing the sums of Zernike coefficients, and therefore requires additional compute time over a simple lookup table.
-Testing on a lightly loaded system shows the following timings for the lookup table and Zernike approximation computation of the full set of healpixel values at one MJD:
+The calculation of the Zernike sky requires computing the sums of Zernike coefficients, and therefore requires additional compute time over a simple look-up table.
+Testing on a lightly loaded system shows the following timings for the look-up table and Zernike approximation computation of the full set of healpixel values at one MJD:
 
 ==========  =========
 Method      Time (ms)
@@ -464,13 +464,13 @@ healpix     4.5
 Conclusion and future work
 ==========================
 
-Replacement of the healpix lookup table based storage of sky brightness values with one based on approximations using fit Zernike coefficients will have the following effects:
+Replacement of the healpix look-up table based storage of sky brightness values with one based on approximations using fit Zernike coefficients will have the following effects:
 
 * The disk storage required for the sky brightness data will drop from 144GiB to 220MiB (for 5th order), 294MiB (for 6th order), or 811MiB (for 11th order).
-* The values retured will not be exactly those calculated by skycalc_, but only approximations with residuals with standard deviations of 0.02 mag/asec^2 in all cases, and rare extreme deviations of up to 0.26, 0.23, or 0.17 mag/asec^2 for 5th, 6th, and 11th order Zernike polynomials, respectively. These extreme deviations occur near a bright moon, when the moon is at an altitude of :math:`\sim 20^{\circ}`. For comparison, the precision of the model is about 20 mag/asec^2.
+* The values returned will not be exactly those calculated by skycalc_, but only approximations with residuals with standard deviations of 0.02 mag/asec^2 in all cases, and rare extreme deviations of up to 0.26, 0.23, or 0.17 mag/asec^2 for 5th, 6th, and 11th order Zernike polynomials, respectively. These extreme deviations occur near a bright moon, when the moon is at an altitude of :math:`\sim 20^{\circ}`. For comparison, the precision of the model is about 20 mag/asec^2.
 * The time required for the schedule to obtain sky brightness values increases by 77%, 122%, and 448% for 5th, 6th, and 11th order Zernikes, respectively.
 
-There are additional optimizations that can be made to reduce the disk space required. :numref:`fig-worst-coeff-vs-time` shows that the coefficients change only slowly with time relative to the current sampling: the coefficiently can potentially be stored much more sparsely with little loss of precision. Furnthermore, the limited precision of the model means that double precision data type with which the coefficients are stored may be excessive: the coefficients could potentially be stored as short floats without loss of effective precision.
+There are additional optimizations that can be made to reduce the disk space required. :numref:`fig-worst-coeff-vs-time` shows that the coefficients change only slowly with time relative to the current sampling: the coefficients can potentially be stored much more sparsely with little loss of precision. Furthermore, the limited precision of the model means that double precision data type with which the coefficients are stored may be excessive: the coefficients could potentially be stored as short floats without loss of effective precision.
   
 .. .. rubric:: References
 
