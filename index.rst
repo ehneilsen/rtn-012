@@ -471,10 +471,16 @@ Replacement of the healpix look-up table based storage of sky brightness values 
 * The time required for the schedule to obtain sky brightness values increases by 77%, 122%, and 448% for 5th, 6th, and 11th order Zernikes, respectively.
 
 There are additional optimizations that can be made to reduce the disk space required. :numref:`fig-worst-coeff-vs-time` shows that the coefficients change only slowly with time relative to the current sampling: the coefficients can potentially be stored much more sparsely with little loss of precision. Furthermore, the limited precision of the model means that double precision data type with which the coefficients are stored may be excessive: the coefficients could potentially be stored as short floats without loss of effective precision.
-  
+
+Acknowledgements
+================
+
+This manuscript has been authored by Fermi Research Alliance, LLC under Contract No. DE-AC02-07CH11359 with the U.S. Department of Energy, Office of Science, Office of High Energy Physics.
+
 .. rubric:: References
 
 .. Make in-text citations with: :cite:`bibkey`.
 
 .. bibliography:: local.bib lsstbib/books.bib lsstbib/lsst.bib lsstbib/lsst-dm.bib lsstbib/refs.bib lsstbib/refs_ads.bib
    :style: lsst_aa
+
