@@ -89,9 +89,9 @@ def resid_map(sky, mjd, band, fig=None):
 
     axes = OrderedDict()
 
-    ax = map_sky(fig, 2, 2, 1, sky, 'sky', 'skycalc',
+    ax = map_sky(fig, 2, 2, 1, sky, 'sky', 'pre',
                  cmap='viridis_r', vmin=vmin, vmax=vmax)
-    axes['skycalc'] = ax
+    axes['pre'] = ax
 
     ax = map_sky(fig, 2, 2, 2, sky, 'zsky', 'Zernike sky',
                  cmap='viridis_r', vmin=vmin, vmax=vmax)
@@ -99,13 +99,13 @@ def resid_map(sky, mjd, band, fig=None):
 
     vmax = np.max(np.abs(sky.resid))
     vmin = -1*vmax
-    ax = map_sky(fig, 2, 2, 3, sky, 'resid', 'skycalc-Zernike',
+    ax = map_sky(fig, 2, 2, 3, sky, 'resid', 'pre-Zernike',
                  cmap='coolwarm_r', vmin=vmin, vmax=vmax)
     axes['resid'] = ax
 
     ax = fig.add_subplot(2, 2, 4)
     ax.hist(sky.query('(zd < 66) and (moon_sep>10)').resid, bins=30)
-    ax.set_title("skycalc-Zernike (masking moon)")
+    ax.set_title("pre-Zernike (masking moon)")
     axes['histogram'] = ax
 
     fig.suptitle(f"MJD {mjd:.3f} in {band} band", y=1)

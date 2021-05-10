@@ -239,7 +239,6 @@ Zernike coefficients that fit a function on the unit disk (the values of the Zer
 
 :numref:`fig-zernike-z` shows :math:`Z^{m}_n(\rho,\phi)` graphically, and provides some intuition for the kinds of functions low order Zernike coefficients can effectively represent.
 
-.. _label: fig-zernike-z
 .. figure:: /_static/basis7.png
    :name: fig-zernike-z
 
@@ -272,7 +271,7 @@ The ``ZernikeSky.load_coeffs`` method reads values for the Zernike coefficients 
 Each (``nside=32``) healpix map contains 12288 values, while a row in the ``pandas.DataFrame`` of Zernike coefficients though a radial degree of 6 has 28 values, a factor of :math:`\sim 439` times more compact.
 
 
-:numref:`fig-worst-coeff-vs-time` shows the variation in the values of the Zernike coefficients over time, over the course of a dynamic night.
+:numref:`fig-dynamic-coeff-vs-time` shows the variation in the values of the Zernike coefficients over time, over the course of a dynamic night.
 At the end of evening twilight, the moon is below the horizon, but rises shortly thereafter.
 The effect is particularly clean in the :math:`Z_0^0` term, in which the sky brightness drops sharply at the start of the night (evening twilight), briefly plateaus (the portion of the night during which the moon is below the horizon), the brightens as the moon rises.
 Over the course of the night, the moon rises into the area covered by the sky approximation, transits, and begins to set.
@@ -280,9 +279,8 @@ It can be seen from the plots that the contribution of each Zernike polynomial d
 It can also be seen that, except at the precise time step at which the moon rises, the values of the coefficients vary smoothly with time relative to the sampling in time:  values of coefficients between points can be effectively estimated by simple linear interpolation.
 This is what the ``lsst.sims.skybrightness_pre.zernike.ZernikeSky`` class does.
 
-.. _label: fig-worst-coeff-vs-time
-.. figure:: /_static/worst_coeff_vs_time.png
-   :name: fig-worst-coeff-vs-time
+.. figure:: /_static/dynamic_coeff_vs_time.png
+   :name: fig-dynamic-coeff-vs-time
 
    The values of the Zernike coefficients for a particularly dynamic night, in which the moon begins beneath the horizon and then rises and transits over the course of the night.
    The coefficients are scaled such that the values on the vertical axis represent the maximum change in magnitude contributed by each mode number.
@@ -298,14 +296,13 @@ If we are making repeated calculations at specific values of :math:`\rho, \phi`,
 To fulfill the API, ``ZernikeSky`` must provide sky brightness values at a predefined set of coordinates, suggesting that we can simply calculate :math:`Z_m^n` at these values, but there is a problem: the healpix coordinates in the argument are predefined in equatorial coordinates, but the values of :math:`Z_m^n` are constant in horizon coordinates.
 The values of :math:`\rho, \phi` for the given set of healpix values are a function of the local Sidereal time (LST), so the values of :math:`Z_m^n` are as well.
    
-.. _label: fig-Z-vs-LST
 .. figure:: /_static/Z_vs_LST.png
    :name: fig-Z-vs-LST
 
    The variation of :math:`Z_m^n` as a function of LST for several sample equatorial healpixels at different declinations.
    (Variation in R.A. shifts the values horizontally, but does not affect the shape of the curves.)
    Sidereal times for which the curves have no values shown are time at which these pointings are at a zenith distance greater than the range of the Zernike function.
-   The lowest order functions (shown in the upper rows) correspond to Zernikes that have the greatest influence on the ultimate sky brightness estimate (see corresponding plots in :numref:`fig-worst-coeff-vs-time`), have Zernike polynomials that vary most smoothly over the sky (:numref:`fig-zernike-z`), and have the smoothest behavior in this plot. 
+   The lowest order functions (shown in the upper rows) correspond to Zernikes that have the greatest influence on the ultimate sky brightness estimate (see corresponding plots in :numref:`fig-dynamic-coeff-vs-time`), have Zernike polynomials that vary most smoothly over the sky (:numref:`fig-zernike-z`), and have the smoothest behavior in this plot. 
 
 Rather than calculate :math:`Z_m^n(\rho, \phi)` "from scratch" for each healpix at the time requested, ``ZernikeSky`` pre-computes ``Z[j][hpix]`` at sequences of LST values for each Zernike mode number and equatorial healpixel, and interpolates to obtain the value of ``Z[j][hpix]`` at the LST corresponding to the MJD with which it is called.
 The inset in the upper left of :numref:`fig-Z-vs-LST` shows sampled points for five different healpixels and different declinations. 
@@ -349,49 +346,45 @@ Masked values in the healpix maps (around the zenith and moon) results in an une
 
 :numref:`fig-resid-new` and :numref:`fig-resid-full` show typical skycalc_ maps, their 6th order (27 term) Zernike approximation, and residuals for dark (moon below the horizon) and bright (full moon above the horizon) sample times. The residuals show high-frequency patterns not representable by Zernike functions of this order; compare the lower left subplots of these figures with the basis functions in :numref:`fig-zernike-z`. 
 
-.. _label: fig-resid-new
 .. figure:: /_static/resid_new.png
    :name: fig-resid-new
 	  
    The upper two panels show the skycalc_ sky brightness for a typical fully dark (no moon) time (in horizon coordinates, with zenith at the center) on the left, and the Zernike approximation of these values on the night.
    The lower left figure shows the difference between the skycalc_ sky brightness and its Zernike approximation, and the lower right histogram shows the distribution of these residuals, masking the :math:`20^{\circ}` around the moon.
 	  
-.. _label: fig-resid-full
 .. figure:: /_static/resid_full.png
    :name: fig-resid-full
 	  
    The subplots above have the same meaning as those in :numref:`fig-resid-new`, except for a time with a full moon above the horizon.
 
-The distribution is dominated by residuals less than 0.05 magnitudes in all cases, but thin tails extend from :math:`\sim -0.3` to :math:`\sim 0.1`. The quantiles and extreme of residuals are as follows:
+The distribution is dominated by residuals less than 0.05 magnitudes in all cases, but thin tails extend from :math:`\sim -0.25` to :math:`\sim 0.15`. The quantiles and extreme of residuals are as follows:
 
-========  ==========  =====  =====  =======  ======  =====  =====  =====  =======  ========  =====
-filter    order         std    min    0.01%    0.1%     1%    50%    99%    99.9%    99.99%    max
-========  ==========  =====  =====  =======  ======  =====  =====  =====  =======  ========  =====
-u         5th order    0.02  -0.14    -0.12   -0.10  -0.04   0.00   0.05     0.06      0.08   0.10
-g         5th order    0.02  -0.26    -0.16   -0.11  -0.05   0.00   0.05     0.08      0.12   0.17
-r         5th order    0.02  -0.24    -0.15   -0.11  -0.05   0.00   0.05     0.08      0.10   0.14
-i         5th order    0.02  -0.19    -0.13   -0.10  -0.04   0.00   0.05     0.07      0.09   0.13
-z         5th order    0.01  -0.17    -0.12   -0.09  -0.04   0.00   0.05     0.06      0.08   0.12
-y         5th order    0.01  -0.14    -0.12   -0.09  -0.03  -0.00   0.04     0.06      0.07   0.08
-u         6th order    0.01  -0.11    -0.06   -0.05  -0.02   0.00   0.02     0.05      0.06   0.07
-g         6th order    0.01  -0.23    -0.14   -0.08  -0.03  -0.00   0.04     0.06      0.09   0.12
-r         6th order    0.01  -0.20    -0.13   -0.07  -0.03  -0.00   0.04     0.06      0.09   0.12
-i         6th order    0.01  -0.17    -0.09   -0.05  -0.02   0.00   0.03     0.06      0.09   0.12
-z         6th order    0.01  -0.15    -0.06   -0.04  -0.02  -0.00   0.03     0.05      0.07   0.11
-y         6th order    0.01  -0.11    -0.05   -0.04  -0.02  -0.00   0.02     0.04      0.05   0.08
-u         11th order   0.00  -0.17    -0.07   -0.03  -0.01   0.00   0.02     0.04      0.07   0.10
-g         11th order   0.01  -0.16    -0.09   -0.04  -0.02   0.00   0.03     0.06      0.09   0.13
-r         11th order   0.01  -0.15    -0.08   -0.04  -0.02   0.00   0.03     0.07      0.10   0.13
-i         11th order   0.01  -0.13    -0.06   -0.03  -0.02   0.00   0.02     0.07      0.09   0.12
-z         11th order   0.01  -0.11    -0.05   -0.03  -0.01   0.00   0.02     0.05      0.08   0.10
-y         11th order   0.00  -0.08    -0.03   -0.02  -0.01   0.00   0.01     0.04      0.06   0.08
-========  ==========  =====  =====  =======  ======  =====  =====  =====  =======  ========  =====
-
+=======  ======  ======  =====  =====  =======  ======  =====  =====  =====  =======  ========  =====
+order    band      mean    std    min    0.01%    0.1%     1%    50%    99%    99.9%    99.99%    max
+=======  ======  ======  =====  =====  =======  ======  =====  =====  =====  =======  ========  =====
+6th      u         0.00   0.02  -0.14    -0.12   -0.10  -0.04  -0.00   0.04     0.06      0.08   0.10
+6th      g         0.00   0.02  -0.26    -0.16   -0.11  -0.05  -0.00   0.05     0.08      0.12   0.17
+6th      r         0.00   0.02  -0.24    -0.15   -0.11  -0.05  -0.00   0.05     0.08      0.10   0.14
+6th      i         0.00   0.02  -0.17    -0.13   -0.10  -0.04  -0.00   0.05     0.06      0.09   0.13
+6th      z         0.00   0.01  -0.15    -0.12   -0.09  -0.04  -0.00   0.04     0.06      0.08   0.12
+6th      y         0.00   0.01  -0.13    -0.12   -0.09  -0.03  -0.00   0.04     0.06      0.07   0.08
+7th      u        -0.00   0.01  -0.11    -0.06   -0.05  -0.02  -0.00   0.02     0.04      0.05   0.07
+7th      g        -0.00   0.01  -0.23    -0.13   -0.08  -0.03  -0.00   0.03     0.06      0.09   0.12
+7th      r        -0.00   0.01  -0.20    -0.12   -0.07  -0.03  -0.00   0.03     0.06      0.08   0.11
+7th      i        -0.00   0.01  -0.14    -0.08   -0.05  -0.02  -0.00   0.03     0.05      0.08   0.12
+7th      z        -0.00   0.01  -0.09    -0.05   -0.04  -0.02  -0.00   0.02     0.04      0.06   0.10
+7th      y        -0.00   0.01  -0.06    -0.05   -0.04  -0.02  -0.00   0.02     0.03      0.05   0.08
+12th     u         0.00   0.00  -0.07    -0.04   -0.03  -0.01   0.00   0.01     0.04      0.06   0.10
+12th     g         0.00   0.01  -0.14    -0.07   -0.04  -0.02   0.00   0.02     0.06      0.09   0.13
+12th     r         0.00   0.01  -0.12    -0.07   -0.04  -0.02   0.00   0.03     0.07      0.09   0.13
+12th     i         0.00   0.01  -0.08    -0.05   -0.03  -0.01   0.00   0.02     0.06      0.09   0.12
+12th     z         0.00   0.00  -0.07    -0.03   -0.02  -0.01   0.00   0.02     0.05      0.08   0.10
+12th     y         0.00   0.00  -0.04    -0.02   -0.02  -0.01   0.00   0.01     0.03      0.06   0.08
+=======  ======  ======  =====  =====  =======  ======  =====  =====  =====  =======  ========  =====
 
 :numref:`fig-residual-hists` shows the histograms of the residuals for each order tested, in each filter, for the first year of tested data. The log scale accentuates the long tails of the distribution.
 Recall that the standard deviation of the residuals of the skycalc_ model with respect to actual data is :math:`\sim 0.2`: instances where the the difference between the Zernike approximation and the skycalc_ value are comparable to the precision of the skycalc_ model are rare, but they exist.
    
-.. _label: fig-residual-hists
 .. figure:: /_static/residual_hists.png
    :name: fig-residual-hists
 
@@ -402,7 +395,6 @@ Examination of examples of time samples with bad residuals indicate conditions u
 It occurs when the moon is at an altitude of :math:`\sim 20^{\circ}`, just outside the area covered by the map (which extends only to a zenith distance of :math:`67^{\circ}`).
 The worst residuals occur at the same azimuth as the moon: just above the moon on the sky.
    
-.. _label: fig-resid-worst
 .. figure:: /_static/resid_worst.png
    :name: fig-resid-worst
 	  
@@ -410,21 +402,18 @@ The worst residuals occur at the same azimuth as the moon: just above the moon o
 
 :numref:`fig-moon-sep-hist` and :numref:`fig-moon-alt-hist` indicate that this is typical of the worst time steps: they occurr when the moon has an altitude of :math:`\sim 20^{\circ}`, in sky within :math:`\sim 20^{\circ}` of the moon, and an altitude of less than :math:`\sim 40^{\circ}`.
 	
-.. _label: fig-moon-sep-hist
 .. figure:: /_static/moon_sep_hist.png
    :name: fig-moon-sep-hist
 
    A 2-dimensional histogram of the sky estimates as a function of residual between skycalc_ magnitude and its Zernike approximation, and the angular separation between the point on the sky and the moon.
    The color is coded according to a log scale, covering 6 orders of magnitude. Note that the worst residuals are within :math:`20^{\circ}` of the moon.
 
-.. _label: fig-moon-alt-hist
 .. figure:: /_static/moon_alt_hist.png
    :name: fig-moon-alt-hist
 
    A 2-dimensional histogram of the sky estimates as a function of residual between skycalc_ magnitude and its Zernike approximation, and the altitude of the moon.. The color is coded according to a log scale, covering 6 orders of magnitude.
    Note that the worst residuals occur when the moon is at an altitude of about :math:`20^{\circ}`.
 
-.. _label: fig-alt-hist
 .. figure:: /_static/alt_hist.png
    :name: fig-alt-hist
 
@@ -434,7 +423,6 @@ The worst residuals occur at the same azimuth as the moon: just above the moon o
 Although these histograms confirm that the very worst residuals occur in situations similar to those shown in :numref:`fig-resid-worst`, they also show some residuals as bad as :math:`\sim 0.15` magnitudes occur even in dark time. :numref:`fig-resid-worst-dark` shows the sample time with the worst residuals in dark time.
 The "spike" of brightness at an azimuth of :math:`\sim90^{\circ}` is suggestive of zodiacal light, and indeed this time step is near twilight, with the sun azimuth near the area with high residuals (:math:`\mbox{az}=95^{\circ}`), as one would expect if this were zodiacal light.
    
-.. _label: fig-resid-worst-dark
 .. figure:: /_static/resid_worst_dark.png
    :name: fig-resid-worst-dark
 	  
@@ -442,7 +430,6 @@ The "spike" of brightness at an azimuth of :math:`\sim90^{\circ}` is suggestive 
 
 If zodiacal light is the cause of all of the extreme dark time residuals, then one would expect these high residuals only to occur at low ecliptic latitude, and indeed this is what :numref:`fig-dark-ecl-lat-hist` shows.
 
-.. _label: fig-dark-ecl-lat-hist
 .. figure:: /_static/dark_ecl_lat_hist.png
    :name: fig-dark-ecl-lat-hist
 
@@ -474,7 +461,7 @@ Replacement of the healpix look-up table based storage of sky brightness values 
 * The values returned will not be exactly those calculated by skycalc_, but only approximations with residuals with standard deviations of :math:`0.02~\mbox{mag/asec}^2` in all cases, and rare extreme deviations of up to 0.26, 0.23, or 0.17  :math:`\mbox{mag/asec}^2` for 5th, 6th, and 11th order Zernike polynomials, respectively. These extreme deviations occur near a bright moon, when the moon is at an altitude of :math:`\sim20^{\circ}`. For comparison, the precision of the model is about :math:`0.20~\mbox{mag/asec}^2`.
 * The time required for the schedule to obtain sky brightness values increases by 77%, 122%, and 448% for 5th, 6th, and 11th order Zernikes, respectively.
 
-There are additional optimizations that can be made to reduce the disk space required. :numref:`fig-worst-coeff-vs-time` shows that the coefficients change only slowly with time relative to the current sampling: the coefficients can potentially be stored much more sparsely with little loss of precision. Furthermore, the limited precision of the model means that double precision data type with which the coefficients are stored may be excessive: the coefficients could potentially be stored as short floats without loss of effective precision.
+There are additional optimizations that can be made to reduce the disk space required. :numref:`fig-dynamic-coeff-vs-time` shows that the coefficients change only slowly with time relative to the current sampling: the coefficients can potentially be stored much more sparsely with little loss of precision. Furthermore, the limited precision of the model means that double precision data type with which the coefficients are stored may be excessive: the coefficients could potentially be stored as short floats without loss of effective precision.
 
 Acknowledgements
 ================
